@@ -3,90 +3,97 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tasmota Dashboard – Teploty & Vlhkost</title>
+  <title>Tasmota Dashboard – Teploty a vlhkost</title>
 
-  <!-- Moderní font -->
+  <!-- Načteme moderní font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Chart.js + časová osa + zoom plugin -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Chart.js z CDN (funguje i na GitHub Pages) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Plugin pro hezčí formátování času na ose X -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 
   <style>
+    /* ========== ZÁKLADNÍ STYLY – moderní tmavý vzhled ========== */
     :root {
       --bg: #0f172a;
       --card: #1e293b;
       --text: #f1f5f9;
       --text-muted: #94a3b8;
       --accent: #38bdf8;
-      --accent-hover: #7dd3fc;
       --border: #334155;
-      --danger: #f87171;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      padding: 1.25rem;
+      padding: 1.5rem;
       line-height: 1.5;
     }
 
-    .container { max-width: 1150px; margin: 0 auto; }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
 
     h1 {
-      font-size: 1.7rem;
+      font-size: 1.75rem;
       font-weight: 700;
-      margin-bottom: 0.2rem;
+      margin-bottom: 0.25rem;
     }
 
     .subtitle {
       color: var(--text-muted);
-      margin-bottom: 1.4rem;
+      margin-bottom: 1.5rem;
       font-size: 0.95rem;
     }
 
+    /* Karty */
     .card {
       background: var(--card);
       border-radius: 16px;
-      padding: 1.2rem;
+      padding: 1.25rem;
       border: 1px solid var(--border);
-      margin-bottom: 1.2rem;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+      margin-bottom: 1.25rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
     }
 
-    /* === Ovládací panel === */
+    /* Ovládací panel – výběr času */
     .controls {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.6rem;
-      align-items: center;
+      gap: 0.5rem;
       margin-bottom: 1rem;
+      align-items: center;
     }
 
     .controls label {
       color: var(--text-muted);
-      font-size: 0.88rem;
+      font-size: 0.9rem;
+      margin-right: 0.5rem;
     }
 
-    .time-btn, .action-btn {
+    .time-btn {
       background: transparent;
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 0.38rem 0.85rem;
+      padding: 0.4rem 0.9rem;
       border-radius: 8px;
       cursor: pointer;
-      font-size: 0.85rem;
-      transition: all 0.15s;
-      font-family: inherit;
+      font-size: 0.875rem;
+      transition: all 0.2s;
     }
 
-    .time-btn:hover, .action-btn:hover {
+    .time-btn:hover {
       border-color: var(--accent);
       color: var(--accent);
     }
@@ -98,75 +105,30 @@
       font-weight: 600;
     }
 
-    .action-btn {
-      background: #0f172a;
-    }
-
-    .action-btn.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #0f172a;
-      font-weight: 600;
-    }
-
-    .action-btn.primary:hover {
-      background: var(--accent-hover);
-    }
-
-    /* Vlastní rozsah Od – Do */
-    .range-box {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.6rem;
-      align-items: center;
-      background: #0f172a;
-      padding: 0.7rem 0.9rem;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      margin-bottom: 1rem;
-    }
-
-    .range-box input[type="datetime-local"] {
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 0.35rem 0.5rem;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      font-family: inherit;
-    }
-
-    .range-box input[type="datetime-local"]:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-
-    /* Aktuální hodnoty */
+    /* Aktuální hodnoty nahoře */
     .stats {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 0.7rem;
-      margin-bottom: 1.2rem;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
     }
 
     .stat {
       background: #0f172a;
       border-radius: 12px;
-      padding: 0.85rem;
+      padding: 0.9rem;
       text-align: center;
       border: 1px solid var(--border);
     }
 
     .stat-label {
-      font-size: 0.72rem;
+      font-size: 0.75rem;
       color: var(--text-muted);
-      margin-bottom: 0.2rem;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
+      margin-bottom: 0.25rem;
     }
 
     .stat-value {
-      font-size: 1.35rem;
+      font-size: 1.4rem;
       font-weight: 700;
     }
 
@@ -176,41 +138,22 @@
     /* Graf */
     .chart-wrapper {
       position: relative;
-      height: 440px;
+      height: 420px;
     }
 
-    .chart-wrapper.loading::after {
-      content: "Načítám data…";
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(15, 23, 42, 0.7);
-      border-radius: 12px;
-      color: var(--accent);
-      font-weight: 500;
-      z-index: 10;
-    }
-
+    /* Info o poslední aktualizaci */
     .footer {
       text-align: center;
       color: var(--text-muted);
       font-size: 0.8rem;
-      margin-top: 0.8rem;
+      margin-top: 1rem;
     }
 
-    .hint {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-top: 0.6rem;
-    }
-
-    @media (max-width: 650px) {
-      body { padding: 0.9rem; }
-      h1 { font-size: 1.35rem; }
-      .chart-wrapper { height: 340px; }
-      .range-box { flex-direction: column; align-items: flex-start; }
+    /* Responzivita pro mobil */
+    @media (max-width: 600px) {
+      body { padding: 1rem; }
+      h1 { font-size: 1.4rem; }
+      .chart-wrapper { height: 320px; }
     }
   </style>
 </head>
@@ -218,55 +161,47 @@
   <div class="container">
 
     <h1>Teploty & Vlhkost</h1>
-    <p class="subtitle">Tasmota → ThingSpeak → Chart.js · moderní dashboard</p>
+    <p class="subtitle">Data z Tasmoty přes ThingSpeak · aktualizace každých 60 sekund</p>
 
-    <!-- Aktuální hodnoty -->
-    <div class="stats" id="stats"></div>
+    <!-- Aktuální hodnoty (poslední naměřené) -->
+    <div class="stats" id="stats">
+      <!-- Naplní se JavaScriptem -->
+    </div>
 
     <div class="card">
-      <!-- Rychlé volby času -->
+      <!-- Volba časového rozsahu -->
       <div class="controls">
-        <label>Rychlý výběr:</label>
+        <label>Časová osa:</label>
         <button class="time-btn active" data-hours="6">6 hodin</button>
         <button class="time-btn" data-hours="12">12 hodin</button>
         <button class="time-btn" data-hours="24">24 hodin</button>
         <button class="time-btn" data-hours="72">3 dny</button>
         <button class="time-btn" data-hours="168">7 dní</button>
-        <button class="time-btn" data-hours="720">30 dní</button>
       </div>
 
-      <!-- Vlastní rozsah Od – Do -->
-      <div class="range-box">
-        <label>Vlastní rozsah:</label>
-        <input type="datetime-local" id="dateFrom">
-        <span style="color:var(--text-muted)">→</span>
-        <input type="datetime-local" id="dateTo">
-        <button class="action-btn primary" id="btnCustomRange">Načíst rozsah</button>
-        <button class="action-btn" id="btnResetZoom">Reset zoom</button>
-        <button class="action-btn" id="btnRefresh">Obnovit data</button>
-      </div>
-
-      <!-- Graf -->
-      <div class="chart-wrapper" id="chartWrapper">
+      <!-- Samotný graf -->
+      <div class="chart-wrapper">
         <canvas id="myChart"></canvas>
       </div>
-
-      <p class="hint">
-        Tip: Zoom kolečkem myši · Posouvání = tažení levým tlačítkem · Dvojklik = reset zoomu
-      </p>
     </div>
 
-    <p class="footer" id="lastUpdate">Připravuji graf…</p>
+    <p class="footer" id="lastUpdate">Načítám data…</p>
   </div>
 
   <script>
     // ============================================================
-    //  NASTAVENÍ – TADY SI UPRAV
+    //  NASTAVENÍ – TADY SI UPRAV PODLE SEBE
     // ============================================================
-    const CHANNEL_ID = "3447893";        // ← Tvoje Channel ID
-    const READ_API_KEY = "PQ2ENSG3NODB0KBH";             // ← jen u privátního kanálu
 
-    // field1–4 = teploty, field5 = vlhkost
+    // Tvoje Channel ID z ThingSpeak (najdeš v nastavení kanálu)
+    const CHANNEL_ID = "1234567";          // ← ZMĚŇ NA SVÉ ČÍSLO
+
+    // Read API Key (jen pokud je kanál PRIVÁTNÍ). U veřejného nech prázdné "".
+    const READ_API_KEY = "";               // ← případně doplň
+
+    // Které fieldy v ThingSpeak odpovídají čemu
+    // field1, field2, field3, field4 = teploty
+    // field5 = vlhkost
     const FIELDS = {
       temp1: { field: 1, label: "Teplota 1", color: "#f97316" },
       temp2: { field: 2, label: "Teplota 2", color: "#fb923c" },
@@ -274,27 +209,28 @@
       temp4: { field: 4, label: "Teplota 4", color: "#fed7aa" },
       hum:   { field: 5, label: "Vlhkost",   color: "#38bdf8" }
     };
+
+    // ============================================================
+    //  DÁL UŽ NIC NEMĚŇ, POKUD NEVÍŠ CO DĚLÁŠ
     // ============================================================
 
-    let chart = null;
-    let currentHours = 6;
-    let useCustomRange = false;
-    let customFrom = null;
-    let customTo = null;
+    let chart = null;          // instance grafu
+    let currentHours = 6;      // aktuálně vybraný časový rozsah
 
-    // ---------- Vytvoření grafu ----------
+    // ---------- Vytvoření grafu (jednou na začátku) ----------
     function createChart() {
       const ctx = document.getElementById("myChart").getContext("2d");
 
       chart = new Chart(ctx, {
         type: "line",
-        data: { datasets: [] },
+        data: {
+          datasets: []   // naplníme později
+        },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          animation: { duration: 400 },
           interaction: {
-            mode: "index",
+            mode: "index",        // při najetí myší ukáže všechny hodnoty v daném čase
             intersect: false
           },
           plugins: {
@@ -303,76 +239,63 @@
               labels: {
                 color: "#e2e8f0",
                 usePointStyle: true,
-                padding: 18,
+                padding: 16,
                 font: { size: 13 }
               }
             },
             tooltip: {
               backgroundColor: "#1e293b",
-              titleColor: "#f8fafc",
+              titleColor: "#f1f5f9",
               bodyColor: "#e2e8f0",
-              borderColor: "#475569",
+              borderColor: "#334155",
               borderWidth: 1,
               padding: 12,
-              cornerRadius: 8,
-              displayColors: true,
               callbacks: {
+                // Hezčí formátování tooltipu
                 title: (items) => {
                   if (!items.length) return "";
-                  return new Date(items[0].parsed.x).toLocaleString("cs-CZ");
+                  const date = new Date(items[0].parsed.x);
+                  return date.toLocaleString("cs-CZ");
                 },
                 label: (item) => {
-                  const v = item.parsed.y;
+                  const value = item.parsed.y;
                   const unit = item.dataset.label.includes("Vlhkost") ? " %" : " °C";
-                  return ` ${item.dataset.label}: ${v?.toFixed(1)}${unit}`;
+                  return ` ${item.dataset.label}: ${value.toFixed(1)}${unit}`;
                 }
-              }
-            },
-            // === ZOOM + PAN ===
-            zoom: {
-              pan: {
-                enabled: true,
-                mode: "x",               // posouvání jen vodorovně
-                modifierKey: null
-              },
-              zoom: {
-                wheel: { enabled: true }, // zoom kolečkem
-                pinch: { enabled: true }, // zoom prsty na mobilu
-                mode: "x",
-                drag: {                   // alternativně lze zoomovat tažením
-                  enabled: false
-                }
-              },
-              limits: {
-                x: { min: "original", max: "original" }
               }
             }
           },
           scales: {
             x: {
-              type: "time",
+              type: "time",                 // časová osa
               time: {
                 tooltipFormat: "d. M. yyyy HH:mm",
                 displayFormats: {
                   hour: "HH:mm",
-                  day: "d. M.",
-                  week: "d. M.",
-                  month: "MMM yyyy"
+                  day: "d. M."
                 }
               },
               grid: { color: "#334155" },
-              ticks: { color: "#94a3b8", maxRotation: 0, autoSkip: true, maxTicksLimit: 10 }
+              ticks: { color: "#94a3b8", maxRotation: 0 }
             },
             y: {
               position: "left",
-              title: { display: true, text: "Teplota (°C)", color: "#94a3b8" },
+              title: {
+                display: true,
+                text: "Teplota (°C)",
+                color: "#94a3b8"
+              },
               grid: { color: "#334155" },
               ticks: { color: "#94a3b8" }
             },
             y1: {
               position: "right",
-              title: { display: true, text: "Vlhkost (%)", color: "#94a3b8" },
-              grid: { drawOnChartArea: false },
+              title: {
+                display: true,
+                text: "Vlhkost (%)",
+                color: "#94a3b8"
+              },
+              grid: { drawOnChartArea: false },  // mřížka jen zleva
               ticks: { color: "#94a3b8" },
               min: 0,
               max: 100
@@ -382,178 +305,108 @@
       });
     }
 
-    // ---------- Načtení dat ----------
-    async function loadData() {
-      const wrapper = document.getElementById("chartWrapper");
-      wrapper.classList.add("loading");
+    // ---------- Načtení dat z ThingSpeak ----------
+    async function loadData(hours) {
+      // Kolik bodů přibližně chceme (ThingSpeak free má limit ~8000)
+      // 1 bod za 5 minut → za 24 h = 288 bodů
+      const results = Math.min(8000, Math.round(hours * 12)); // cca každých 5 min
 
-      let url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?`;
-
-      if (useCustomRange && customFrom && customTo) {
-        // Vlastní rozsah Od – Do
-        const start = customFrom.toISOString().slice(0, 19).replace("T", "%20");
-        const end   = customTo.toISOString().slice(0, 19).replace("T", "%20");
-        url += `start=${start}&end=${end}`;
-      } else {
-        // Rychlý výběr podle hodin
-        const results = Math.min(8000, Math.round(currentHours * 12)); // cca 5min interval
-        url += `results=${results}`;
-      }
-
-      if (READ_API_KEY) url += `&api_key=${READ_API_KEY}`;
+      const url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?results=${results}` +
+                  (READ_API_KEY ? `&api_key=${READ_API_KEY}` : "");
 
       try {
         const res = await fetch(url);
-        if (!res.ok) throw new Error("Chyba API");
+        if (!res.ok) throw new Error("Chyba při načítání dat z ThingSpeak");
 
         const json = await res.json();
-        let feeds = json.feeds || [];
+        const feeds = json.feeds || [];
 
         if (feeds.length === 0) {
-          document.getElementById("lastUpdate").textContent = "Žádná data pro zvolený rozsah";
-          wrapper.classList.remove("loading");
+          document.getElementById("lastUpdate").textContent = "Žádná data v kanálu";
           return;
         }
 
-        // Pokud jsme použili results=, ještě vyfiltrujeme přesný čas
-        if (!useCustomRange) {
-          const cutoff = Date.now() - (currentHours * 3600 * 1000);
-          feeds = feeds.filter(f => new Date(f.created_at).getTime() >= cutoff);
-        }
+        // Filtrujeme data podle zvoleného časového rozsahu
+        const now = Date.now();
+        const cutoff = now - (hours * 60 * 60 * 1000);
+        const filtered = feeds.filter(f => new Date(f.created_at).getTime() >= cutoff);
 
-        // Vytvoříme datasety
+        // Připravíme datasety pro graf
         const datasets = Object.values(FIELDS).map(cfg => {
-          const isHum = cfg.field === 5;
+          const isHumidity = cfg.field === 5;
           return {
             label: cfg.label,
-            data: feeds
-              .map(f => ({
-                x: new Date(f.created_at),
-                y: parseFloat(f[`field${cfg.field}`])
-              }))
-              .filter(p => !isNaN(p.y)),
+            data: filtered.map(f => ({
+              x: new Date(f.created_at),
+              y: parseFloat(f[`field${cfg.field}`]) || null
+            })).filter(p => p.y !== null),
             borderColor: cfg.color,
-            backgroundColor: cfg.color + "22",
-            borderWidth: 2.2,
-            pointRadius: 0,
+            backgroundColor: cfg.color + "33",   // průhledná výplň
+            borderWidth: 2,
+            pointRadius: 0,                      // body skryté (při najetí se objeví)
             pointHoverRadius: 5,
-            pointHoverBorderWidth: 2,
-            tension: 0.3,
-            yAxisID: isHum ? "y1" : "y",
+            tension: 0.25,                       // jemné zakřivení
+            yAxisID: isHumidity ? "y1" : "y",    // vlhkost na pravé ose
             fill: false
           };
         });
 
+        // Aktualizujeme graf
         chart.data.datasets = datasets;
-        chart.update("none");
+        chart.update("none");   // "none" = bez animace (rychlejší)
 
-        // Aktualizujeme aktuální hodnoty
-        updateStats(feeds[feeds.length - 1]);
+        // Aktualizujeme aktuální hodnoty nahoře
+        updateStats(filtered[filtered.length - 1]);
 
-        const first = new Date(feeds[0].created_at);
-        const last  = new Date(feeds[feeds.length - 1].created_at);
+        // Text o poslední aktualizaci
+        const last = new Date(filtered[filtered.length - 1].created_at);
         document.getElementById("lastUpdate").textContent =
-          `Zobrazeno: ${first.toLocaleString("cs-CZ")} → ${last.toLocaleString("cs-CZ")} · ${feeds.length} bodů`;
+          `Poslední data: ${last.toLocaleString("cs-CZ")} · Celkem bodů: ${filtered.length}`;
 
       } catch (err) {
         console.error(err);
-        document.getElementById("lastUpdate").textContent = "Chyba načítání – zkontroluj Channel ID a připojení";
+        document.getElementById("lastUpdate").textContent = "Chyba načítání dat – zkontroluj Channel ID";
       }
-
-      wrapper.classList.remove("loading");
     }
 
     // ---------- Aktuální hodnoty nahoře ----------
-    function updateStats(last) {
-      if (!last) return;
+    function updateStats(lastFeed) {
+      if (!lastFeed) return;
+
       const html = Object.values(FIELDS).map(cfg => {
-        const val = parseFloat(last[`field${cfg.field}`]);
+        const val = parseFloat(lastFeed[`field${cfg.field}`]);
         const unit = cfg.field === 5 ? " %" : " °C";
         const cls = cfg.field === 5 ? "hum" : "temp";
         return `
           <div class="stat">
             <div class="stat-label">${cfg.label}</div>
             <div class="stat-value ${cls}">${isNaN(val) ? "–" : val.toFixed(1) + unit}</div>
-          </div>`;
+          </div>
+        `;
       }).join("");
+
       document.getElementById("stats").innerHTML = html;
     }
 
-    // ---------- Eventy ----------
-    // Rychlé tlačítka
+    // ---------- Ovládání tlačítek časové osy ----------
     document.querySelectorAll(".time-btn").forEach(btn => {
       btn.addEventListener("click", () => {
+        // Odstraníme aktivní třídu ze všech
         document.querySelectorAll(".time-btn").forEach(b => b.classList.remove("active"));
+        // Přidáme na kliknuté
         btn.classList.add("active");
-        useCustomRange = false;
+
         currentHours = parseInt(btn.dataset.hours);
-        loadData();
+        loadData(currentHours);
       });
     });
 
-    // Vlastní rozsah
-    document.getElementById("btnCustomRange").addEventListener("click", () => {
-      const fromVal = document.getElementById("dateFrom").value;
-      const toVal   = document.getElementById("dateTo").value;
-
-      if (!fromVal || !toVal) {
-        alert("Vyplň prosím obě pole Od i Do");
-        return;
-      }
-
-      customFrom = new Date(fromVal);
-      customTo   = new Date(toVal);
-
-      if (customFrom >= customTo) {
-        alert("Datum „Od“ musí být dříve než „Do“");
-        return;
-      }
-
-      // Odstraníme aktivní rychlé tlačítko
-      document.querySelectorAll(".time-btn").forEach(b => b.classList.remove("active"));
-      useCustomRange = true;
-      loadData();
-    });
-
-    // Reset zoom
-    document.getElementById("btnResetZoom").addEventListener("click", () => {
-      chart.resetZoom();
-    });
-
-    // Obnovit data
-    document.getElementById("btnRefresh").addEventListener("click", () => {
-      loadData();
-    });
-
-    // Dvojklik na graf = reset zoom
-    document.getElementById("myChart").addEventListener("dblclick", () => {
-      chart.resetZoom();
-    });
-
-    // Předvyplníme datumy (posledních 24 hodin)
-    function prefillDates() {
-      const now = new Date();
-      const from = new Date(now.getTime() - 24 * 3600 * 1000);
-
-      // datetime-local chce formát YYYY-MM-DDTHH:MM
-      const toLocal = d => {
-        const pad = n => String(n).padStart(2, "0");
-        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      };
-
-      document.getElementById("dateFrom").value = toLocal(from);
-      document.getElementById("dateTo").value = toLocal(now);
-    }
-
     // ---------- Start ----------
     createChart();
-    prefillDates();
-    loadData();
+    loadData(currentHours);
 
-    // Automatická aktualizace každou minutu (jen když není vlastní rozsah)
-    setInterval(() => {
-      if (!useCustomRange) loadData();
-    }, 60 * 1000);
+    // Automatická aktualizace každou minutu
+    setInterval(() => loadData(currentHours), 60 * 1000);
   </script>
 </body>
-  </html>
+</html>
