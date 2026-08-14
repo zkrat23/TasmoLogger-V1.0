@@ -5,20 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tasmota Dashboard – Teploty a vlhkost</title>
 
+  <!-- Moderní font Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+  <!-- Chart.js + podpora časové osy -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
   <style>
+    /* ========== ZÁKLADNÍ BARVY A PROMĚNNÉ ========== */
     :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --text: #f1f5f9;
-      --text-muted: #94a3b8;
-      --accent: #38bdf8;
-      --border: #334155;
+      --bg: #0f172a;           /* pozadí stránky */
+      --card: #1e293b;         /* pozadí karet */
+      --text: #f1f5f9;         /* hlavní text */
+      --text-muted: #94a3b8;   /* šedý text */
+      --accent: #38bdf8;       /* zvýrazňující modrá */
+      --border: #334155;       /* ohraničení */
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -34,9 +37,19 @@
 
     .container { max-width: 1100px; margin: 0 auto; }
 
-    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }
-    .subtitle { color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.95rem; }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
 
+    .subtitle {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    /* Karta kolem grafu */
     .card {
       background: var(--card);
       border-radius: 16px;
@@ -46,25 +59,28 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.25);
     }
 
+    /* Společné styly pro řady tlačítek */
     .controls {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
-      margin-bottom: 1rem;
+      margin-bottom: 0.9rem;
       align-items: center;
     }
 
     .controls label {
       color: var(--text-muted);
       font-size: 0.9rem;
-      margin-right: 0.5rem;
+      margin-right: 0.4rem;
+      min-width: 70px;
     }
 
-    .time-btn, .nav-btn {
+    /* Tlačítka období i posunu */
+    .time-btn, .step-btn, .nav-btn {
       background: transparent;
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 0.4rem 0.9rem;
+      padding: 0.4rem 0.85rem;
       border-radius: 8px;
       cursor: pointer;
       font-size: 0.875rem;
@@ -72,39 +88,46 @@
       min-width: 42px;
     }
 
-    .time-btn:hover, .nav-btn:hover:not(:disabled) {
+    .time-btn:hover,
+    .step-btn:hover,
+    .nav-btn:hover:not(:disabled) {
       border-color: var(--accent);
       color: var(--accent);
     }
 
-    .time-btn.active {
+    /* Aktivní tlačítko (vybrané období / krok) */
+    .time-btn.active,
+    .step-btn.active {
       background: var(--accent);
       border-color: var(--accent);
       color: #0f172a;
       font-weight: 600;
     }
 
+    /* Vypnutá šipka */
     .nav-btn:disabled {
       opacity: 0.35;
       cursor: not-allowed;
     }
 
-    /* Navigace pod grafem */
+    /* Řádek se šipkami */
     .nav-controls {
       display: flex;
       justify-content: center;
       gap: 1rem;
       margin-top: 1.1rem;
+      margin-bottom: 0.9rem;
       align-items: center;
     }
 
     .nav-label {
       color: var(--text-muted);
       font-size: 0.85rem;
-      min-width: 180px;
+      min-width: 190px;
       text-align: center;
     }
 
+    /* Karty s aktuálními hodnotami nahoře */
     .stats {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -120,13 +143,26 @@
       border: 1px solid var(--border);
     }
 
-    .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; }
-    .stat-value { font-size: 1.4rem; font-weight: 700; }
-    .stat-value.temp { color: #f97316; }
-    .stat-value.hum  { color: #38bdf8; }
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
 
-    .chart-wrapper { position: relative; height: 420px; }
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
 
+    .stat-value.temp { color: #f97316; }   /* oranžová pro teploty */
+    .stat-value.hum  { color: #38bdf8; }   /* modrá pro vlhkost */
+
+    .chart-wrapper {
+      position: relative;
+      height: 420px;
+    }
+
+    /* Spodní informační řádek */
     .footer {
       text-align: center;
       color: var(--text-muted);
@@ -134,11 +170,13 @@
       margin-top: 1rem;
     }
 
+    /* Úpravy pro mobil */
     @media (max-width: 600px) {
       body { padding: 1rem; }
       h1 { font-size: 1.4rem; }
       .chart-wrapper { height: 320px; }
-      .nav-label { min-width: 120px; font-size: 0.8rem; }
+      .nav-label { min-width: 130px; font-size: 0.8rem; }
+      .controls label { min-width: auto; }
     }
   </style>
 </head>
@@ -148,41 +186,68 @@
     <h1>Teploty & Vlhkost</h1>
     <p class="subtitle">Data z Tasmoty přes ThingSpeak · aktualizace každých 60 sekund</p>
 
+    <!-- Aktuální hodnoty (poslední naměřené) -->
     <div class="stats" id="stats"></div>
 
     <div class="card">
-      <!-- Volba délky období -->
+
+      <!-- ========== 1. VOLBA DÉLKY OBDOBÍ (jak široké okno grafu) ========== -->
       <div class="controls">
         <label>Období:</label>
-        <button class="time-btn active" data-hours="6">6 hodin</button>
-        <button class="time-btn" data-hours="12">12 hodin</button>
-        <button class="time-btn" data-hours="24">24 hodin</button>
-        <button class="time-btn" data-hours="72">3 dny</button>
-        <button class="time-btn" data-hours="168">7 dní</button>
+        <button class="time-btn" data-hours="0.5">30m</button>
+        <button class="time-btn" data-hours="1">1h</button>
+        <button class="time-btn" data-hours="2">2h</button>
+        <button class="time-btn" data-hours="3">3h</button>
+        <button class="time-btn active" data-hours="6">6h</button>
+        <button class="time-btn" data-hours="12">12h</button>
+        <button class="time-btn" data-hours="24">24h</button>
+        <button class="time-btn" data-hours="72">3d</button>
+        <button class="time-btn" data-hours="168">7d</button>
       </div>
 
+      <!-- Graf -->
       <div class="chart-wrapper">
         <canvas id="myChart"></canvas>
       </div>
 
-      <!-- Šipky pro posun v čase -->
+      <!-- ========== 2. ŠIPKY PRO POSUN V ČASE ========== -->
       <div class="nav-controls">
-        <button class="nav-btn" id="btnOlder" title="Starší data">←</button>
+        <button class="nav-btn" id="btnOlder" title="Posunout do minulosti">←</button>
         <span class="nav-label" id="rangeLabel">Aktuální období</span>
-        <button class="nav-btn" id="btnNewer" title="Novější data" disabled>→</button>
+        <button class="nav-btn" id="btnNewer" title="Posunout k současnosti" disabled>→</button>
       </div>
+
+      <!-- ========== 3. VOLBA VELIKOSTI KROKU (o kolik se šipky posunou) ========== -->
+      <div class="controls">
+        <label>Posun o:</label>
+        <button class="step-btn" data-hours="0.5">30m</button>
+        <button class="step-btn" data-hours="1">1h</button>
+        <button class="step-btn active" data-hours="3">3h</button>
+        <button class="step-btn" data-hours="6">6h</button>
+        <button class="step-btn" data-hours="12">12h</button>
+        <button class="step-btn" data-hours="24">24h</button>
+        <button class="step-btn" data-hours="72">3d</button>
+      </div>
+
     </div>
 
+    <!-- Spodní řádek s informacemi -->
     <p class="footer" id="lastUpdate">Načítám data…</p>
   </div>
 
   <script>
-    // ============================================================
-    //  NASTAVENÍ – TADY SI UPRAV PODLE SEBE
-    // ============================================================
-    const CHANNEL_ID = "3447893";          // ← ZMĚŇ NA SVÉ CHANNEL ID
-    const READ_API_KEY = "PQ2ENSG3NODB0KBH";               // ← jen u privátního kanálu
+    // =====================================================================
+    //  NASTAVENÍ – TADY UPRAVUJ
+    // =====================================================================
 
+    // Channel ID z ThingSpeak (najdeš v nastavení svého kanálu)
+    const CHANNEL_ID = "1234567";          // ← ZMĚŇ NA SVÉ ČÍSLO
+
+    // Read API Key – vyplň jen když je kanál PRIVÁTNÍ, jinak nech prázdné
+    const READ_API_KEY = "";
+
+    // Mapování fieldů z ThingSpeak na názvy a barvy
+    // field1–4 = teploty, field5 = vlhkost
     const FIELDS = {
       temp1: { field: 1, label: "Teplota 1", color: "#f97316" },
       temp2: { field: 2, label: "Teplota 2", color: "#fb923c" },
@@ -190,27 +255,39 @@
       temp4: { field: 4, label: "Teplota 4", color: "#fed7aa" },
       hum:   { field: 5, label: "Vlhkost",   color: "#38bdf8" }
     };
-    // ============================================================
 
-    let chart = null;
-    let currentHours = 6;       // délka zobrazovaného okna
-    let offsetHours = 0;        // o kolik hodin jsme posunuti do minulosti (0 = teď)
+    // =====================================================================
+    //  PROMĚNNÉ, KTERÉ SI SKRIPT PAMATUJE
+    // =====================================================================
 
-    // ---------- Vytvoření grafu ----------
+    let chart = null;            // instance grafu Chart.js
+    let currentHours = 6;        // jak široké je aktuálně zobrazené okno (v hodinách)
+    let offsetHours = 0;         // o kolik hodin jsme posunuti do minulosti (0 = nejsme)
+    let stepHours = 3;           // o kolik hodin se posuneme po kliknutí na šipku
+
+    // =====================================================================
+    //  VYTVOŘENÍ GRAFU (zavolá se jen jednou při startu)
+    // =====================================================================
     function createChart() {
       const ctx = document.getElementById("myChart").getContext("2d");
 
       chart = new Chart(ctx, {
         type: "line",
-        data: { datasets: [] },
+        data: {
+          datasets: []          // data se doplní později funkcí loadData()
+        },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+
+          // Při najetí myší ukáže všechny hodnoty ve stejném čase
           interaction: {
             mode: "index",
             intersect: false
           },
+
           plugins: {
+            // Legenda nahoře
             legend: {
               position: "top",
               labels: {
@@ -220,6 +297,8 @@
                 font: { size: 13 }
               }
             },
+
+            // Tooltip (bublina s hodnotami)
             tooltip: {
               backgroundColor: "#1e293b",
               titleColor: "#f1f5f9",
@@ -228,10 +307,12 @@
               borderWidth: 1,
               padding: 12,
               callbacks: {
+                // Nadpis tooltipu = datum a čas
                 title: (items) => {
                   if (!items.length) return "";
                   return new Date(items[0].parsed.x).toLocaleString("cs-CZ");
                 },
+                // Jednotlivé řádky = název + hodnota + jednotka
                 label: (item) => {
                   const value = item.parsed.y;
                   const unit = item.dataset.label.includes("Vlhkost") ? " %" : " °C";
@@ -240,7 +321,9 @@
               }
             }
           },
+
           scales: {
+            // Osa X = čas
             x: {
               type: "time",
               time: {
@@ -251,19 +334,31 @@
                 }
               },
               grid: { color: "#334155" },
-              ticks: { color: "#94a3b8", maxRotation: 0 },
-              // min a max budeme nastavovat dynamicky
+              ticks: { color: "#94a3b8", maxRotation: 0 }
+              // min a max se nastavují dynamicky v loadData()
             },
+
+            // Levá osa Y = teplota
             y: {
               position: "left",
-              title: { display: true, text: "Teplota (°C)", color: "#94a3b8" },
+              title: {
+                display: true,
+                text: "Teplota (°C)",
+                color: "#94a3b8"
+              },
               grid: { color: "#334155" },
               ticks: { color: "#94a3b8" }
             },
+
+            // Pravá osa Y = vlhkost
             y1: {
               position: "right",
-              title: { display: true, text: "Vlhkost (%)", color: "#94a3b8" },
-              grid: { drawOnChartArea: false },
+              title: {
+                display: true,
+                text: "Vlhkost (%)",
+                color: "#94a3b8"
+              },
+              grid: { drawOnChartArea: false },   // mřížku kreslíme jen zleva
               ticks: { color: "#94a3b8" },
               min: 0,
               max: 100
@@ -273,14 +368,16 @@
       });
     }
 
-    // ---------- Načtení dat ----------
+    // =====================================================================
+    //  NAČTENÍ DAT Z THINGSPEAK + VYKRESLENÍ
+    // =====================================================================
     async function loadData() {
-      // Vypočítáme začátek a konec zobrazovaného okna
+      // Spočítáme začátek a konec okna, které chceme zobrazit
       const now = Date.now();
-      const endTime   = now - (offsetHours * 60 * 60 * 1000);
-      const startTime = endTime - (currentHours * 60 * 60 * 1000);
+      const endTime   = now - (offsetHours * 60 * 60 * 1000);          // konec okna
+      const startTime = endTime - (currentHours * 60 * 60 * 1000);     // začátek okna
 
-      // Formát pro ThingSpeak (YYYY-MM-DD HH:MM:SS)
+      // Převedeme čas do formátu, který chce ThingSpeak (YYYY-MM-DD HH:MM:SS)
       const formatDate = (ms) => {
         const d = new Date(ms);
         return d.toISOString().slice(0, 19).replace("T", " ");
@@ -289,121 +386,169 @@
       const startStr = formatDate(startTime);
       const endStr   = formatDate(endTime);
 
-      // Požadujeme víc bodů, ať máme rezervu
-      const results = Math.min(8000, Math.round(currentHours * 12) + 50);
+      // Kolik bodů maximálně chceme (ThingSpeak free má limit cca 8000)
+      const results = Math.min(8000, Math.round(currentHours * 12) + 80);
 
-      let url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?results=${results}` +
-                `&start=${encodeURIComponent(startStr)}&end=${encodeURIComponent(endStr)}`;
+      // Složení adresy API
+      let url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json` +
+                `?results=${results}` +
+                `&start=${encodeURIComponent(startStr)}` +
+                `&end=${encodeURIComponent(endStr)}`;
 
-      if (READ_API_KEY) url += `&api_key=${READ_API_KEY}`;
+      // Pokud máme API klíč, přidáme ho
+      if (READ_API_KEY) {
+        url += `&api_key=${READ_API_KEY}`;
+      }
 
       try {
         const res = await fetch(url);
-        if (!res.ok) throw new Error("Chyba při načítání dat");
+        if (!res.ok) throw new Error("Nepodařilo se načíst data z ThingSpeak");
 
         const json = await res.json();
         const feeds = json.feeds || [];
 
-        // Datasety
+        // Připravíme datasety pro každou veličinu (4 teploty + vlhkost)
         const datasets = Object.values(FIELDS).map(cfg => {
           const isHumidity = cfg.field === 5;
+
           return {
             label: cfg.label,
-            data: feeds.map(f => ({
-              x: new Date(f.created_at),
-              y: parseFloat(f[`field${cfg.field}`]) || null
-            })).filter(p => p.y !== null),
+            data: feeds
+              .map(f => ({
+                x: new Date(f.created_at),
+                y: parseFloat(f[`field${cfg.field}`]) || null
+              }))
+              .filter(p => p.y !== null),          // vyhodíme prázdné hodnoty
+
             borderColor: cfg.color,
-            backgroundColor: cfg.color + "33",
+            backgroundColor: cfg.color + "33",     // velmi průhledná barva
             borderWidth: 2,
-            pointRadius: 0,
-            pointHoverRadius: 5,
-            tension: 0.25,
-            yAxisID: isHumidity ? "y1" : "y",
+            pointRadius: 0,                        // body schované
+            pointHoverRadius: 5,                   // při najetí se objeví
+            tension: 0.25,                         // jemné zakřivení čáry
+            yAxisID: isHumidity ? "y1" : "y",      // vlhkost jde na pravou osu
             fill: false
           };
         });
 
+        // Nahrajeme data do grafu
         chart.data.datasets = datasets;
 
-        // *** Důležité: pevně nastavíme začátek a konec osy X ***
+        // *** Nejdůležitější část ***
+        // Osa X bude VŽDY přesně tak dlouhá, jak jsme zvolili v „Období“
+        // (i když data existují jen za část intervalu)
         chart.options.scales.x.min = startTime;
         chart.options.scales.x.max = endTime;
 
-        chart.update("none");
+        chart.update("none");   // "none" = bez animace (rychlejší)
 
-        // Aktuální hodnoty (jen když jsme na nejnovějším okně)
+        // Aktualizujeme karty s aktuálními hodnotami
+        // (pouze když se díváme na nejnovější období)
         if (offsetHours === 0 && feeds.length > 0) {
           updateStats(feeds[feeds.length - 1]);
         }
 
-        // Popisek rozsahu
-        const from = new Date(startTime).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
-        const to   = new Date(endTime).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
+        // Text uprostřed mezi šipkami = přesný časový rozsah
+        const opts = { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" };
+        const from = new Date(startTime).toLocaleString("cs-CZ", opts);
+        const to   = new Date(endTime).toLocaleString("cs-CZ", opts);
         document.getElementById("rangeLabel").textContent = `${from} – ${to}`;
 
-        // Stav šipek
+        // Šipka vpravo je aktivní jen když nejsme na nejnovějším okně
         document.getElementById("btnNewer").disabled = (offsetHours === 0);
 
-        // Info dole
-        const lastText = feeds.length > 0
-          ? `Načteno ${feeds.length} bodů`
-          : "V tomto období nejsou žádná data";
-        document.getElementById("lastUpdate").textContent = lastText;
+        // Spodní informační řádek + čas aktualizace
+        const nowStr = new Date().toLocaleString("cs-CZ");
+        const info = feeds.length > 0
+          ? `Načteno ${feeds.length} bodů · Poslední aktualizace: ${nowStr}`
+          : `V tomto období nejsou data · Poslední aktualizace: ${nowStr}`;
+
+        document.getElementById("lastUpdate").textContent = info;
 
       } catch (err) {
         console.error(err);
-        document.getElementById("lastUpdate").textContent = "Chyba načítání – zkontroluj Channel ID";
+        document.getElementById("lastUpdate").textContent =
+          "Chyba načítání dat – zkontroluj Channel ID a připojení";
       }
     }
 
-    // ---------- Aktuální hodnoty nahoře ----------
+    // =====================================================================
+    //  AKTUALIZACE KARET S AKTUÁLNÍMI HODNOTAMI (nahoře)
+    // =====================================================================
     function updateStats(lastFeed) {
       if (!lastFeed) return;
+
       const html = Object.values(FIELDS).map(cfg => {
         const val = parseFloat(lastFeed[`field${cfg.field}`]);
         const unit = cfg.field === 5 ? " %" : " °C";
-        const cls = cfg.field === 5 ? "hum" : "temp";
+        const cls  = cfg.field === 5 ? "hum" : "temp";
+
         return `
           <div class="stat">
             <div class="stat-label">${cfg.label}</div>
-            <div class="stat-value ${cls}">${isNaN(val) ? "–" : val.toFixed(1) + unit}</div>
+            <div class="stat-value ${cls}">
+              ${isNaN(val) ? "–" : val.toFixed(1) + unit}
+            </div>
           </div>
         `;
       }).join("");
+
       document.getElementById("stats").innerHTML = html;
     }
 
-    // ---------- Tlačítka období ----------
+    // =====================================================================
+    //  OVLÁDÁNÍ TLAČÍTEK
+    // =====================================================================
+
+    // --- Tlačítka „Období“ (mění šířku okna grafu) ---
     document.querySelectorAll(".time-btn").forEach(btn => {
       btn.addEventListener("click", () => {
+        // Zvýrazníme aktivní tlačítko
         document.querySelectorAll(".time-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
-        currentHours = parseInt(btn.dataset.hours);
-        offsetHours = 0;               // při změně období skočíme na současnost
+
+        // Uložíme novou šířku okna a skočíme na současnost
+        currentHours = parseFloat(btn.dataset.hours);
+        offsetHours = 0;
         loadData();
       });
     });
 
-    // ---------- Šipky posunu ----------
+    // --- Tlačítka „Posun o“ (mění velikost kroku šipek) ---
+    document.querySelectorAll(".step-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".step-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        // Jen si zapamatujeme nový krok, data nenačítáme
+        stepHours = parseFloat(btn.dataset.hours);
+      });
+    });
+
+    // --- Šipka doleva = starší data ---
     document.getElementById("btnOlder").addEventListener("click", () => {
-      offsetHours += currentHours;     // posuneme se o celé období dozadu
+      offsetHours += stepHours;     // posuneme se o zvolený krok do minulosti
       loadData();
     });
 
+    // --- Šipka doprava = novější data ---
     document.getElementById("btnNewer").addEventListener("click", () => {
-      offsetHours = Math.max(0, offsetHours - currentHours);
+      offsetHours = Math.max(0, offsetHours - stepHours);
       loadData();
     });
 
-    // ---------- Start ----------
-    createChart();
-    loadData();
+    // =====================================================================
+    //  START STRÁNKY
+    // =====================================================================
+    createChart();   // nejdřív vytvoříme prázdný graf
+    loadData();      // hned načteme data
 
-    // Automatická aktualizace jen když jsme na aktuálním okně
+    // Každých 60 sekund obnovíme data, ale jen když se díváme na aktuální období
     setInterval(() => {
-      if (offsetHours === 0) loadData();
+      if (offsetHours === 0) {
+        loadData();
+      }
     }, 60 * 1000);
   </script>
 </body>
-  </html>
+</html>
